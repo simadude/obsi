@@ -13,6 +13,8 @@ Features of the game engine:
 * 3 Different renderering APIs! Including: `Pixelbox` (by Dev9551), `Parea`, `Hmon`.
 * Resizability - you can change the resolution ingame and the engine will still perform fine! (if it doesn't then it's your fault, probably)
 * Tilesheets - if your image is a map of images with the same width and height, Obsi can directly give you an array of images using `obsi.graphics.newImagesFromTilesheet`.
+* Support for noteblocks and formats like `.nbs` (Thanks to [Xella](https://github.com/Xella37/NBS-Tunes-CC)) and `.onb` (the latter is just mostly a csv).
+* Playing/pausing/unpausing/stopping noteblock audio whenever you like.
 
 
 Features that are not implemented:
@@ -22,3 +24,8 @@ Features that are not implemented:
 * Triangles (Did I mention that this is a 2D game engine?)
 * Bundler/minifier - There are plans for Obsi to have a bundler in the repository, so that when you download it, you can bundle everything up and reduce its size significantly.
 * Installer - If I will ever make an installer for this thing, it will probably will have a bit of telemetry to see what version of CC:Tweaked you are using, and whether you are on emulator or not.
+
+
+Credits:
+[9551-Dev](https://github.com/9551-Dev) - For the Pixelbox rendering API.
+[Xella37](https://github.com/Xella37) - For the original parsing function for NBS file format.
