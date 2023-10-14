@@ -27,5 +27,7 @@ Features that are not implemented:
 
 
 Credits:
+
 [9551-Dev](https://github.com/9551-Dev) - For the Pixelbox rendering API.
+
 [Xella37](https://github.com/Xella37) - For the original parsing function for NBS file format.
