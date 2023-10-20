@@ -1,18 +1,18 @@
-local path = arg[1]
-if not path then
+local gamePath = arg[1]
+if not gamePath then
 	printError("Obsi error: No path specified!")
 	printError("Usage: obsi <path>")
 	return
 end
-path = fs.combine(shell.dir(), path)
-if not fs.exists(path) then
+gamePath = fs.combine(shell.dir(), gamePath)
+if not fs.exists(gamePath) then
 	printError("Obsi error: Path does not exist!")
-	printError(("Path being: %s"):format(path))
+	printError(("Path being: %s"):format(gamePath))
 	printError("Please make sure that your path is correct!")
 	return
-elseif not fs.isDir(path) then
+elseif not fs.isDir(gamePath) then
 	printError("Obsi error: Path is not a folder!")
-	printError(("Path being: %s"):format(path))
+	printError(("Path being: %s"):format(gamePath))
 	printError("Please make sure that your path is correct!")
 	return
 end
@@ -29,9 +29,9 @@ local config = {
 
 local r = require "cc.require"
 local env = setmetatable({obsi = obsi}, { __index = _G })
-env.require, env.package = r.make(env, path)
-if fs.exists(fs.combine(path, "config.lua")) then
-	local chunk, err = loadfile(fs.combine(path, "config.lua"), "bt", env)
+env.require, env.package = r.make(env, gamePath)
+if fs.exists(fs.combine(gamePath, "config.lua")) then
+	local chunk, err = loadfile(fs.combine(gamePath, "config.lua"), "bt", env)
 	if not chunk then
 		printError(("obsi: config.lua file is found but can't be run!"))
 		printError(err)
@@ -51,20 +51,20 @@ local canvas
 local winh
 local pixelbox
 local soundLoop
-obsi.graphics, canvas, winh, pixelbox = require("graphics")(path, config.renderingAPI)
+obsi.system = require("system")
+obsi.graphics, canvas, winh, pixelbox = require("graphics")(gamePath, config.renderingAPI)
 obsi.time = require("time")
 obsi.keyboard = require("keyboard")
-obsi.system = require("system")
 obsi.mouse = require("mouse")(obsi.system.isAdvanced())
-obsi.audio, soundLoop = require("audio")(path)
+obsi.audio, soundLoop = require("audio")(gamePath)
 local emptyFunc = function(...) end
 obsi.debug = false
-obsi.version = "1.1.0"
+obsi.version = "1.2.0"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
 
-local chunk, err = loadfile(fs.combine(path, "main.lua"), "bt", env)
+local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
 if not chunk then
-	printError(("obsi: %s not found!"):format(fs.combine(path, "main.lua")))
+	printError(("obsi: %s not found!"):format(fs.combine(gamePath, "main.lua")))
 	printError(err)
 	return
 end
@@ -124,23 +124,24 @@ local function gameLoop()
 		if obsi.debug then
 			local bg, fg = obsi.graphics.bgColor, obsi.graphics.fgColor
 			obsi.graphics.bgColor, obsi.graphics.fgColor = colors.black, colors.white
-			obsi.graphics.write(obsi.system.getHost(), 2, 1)
-			obsi.graphics.write(("rendering: %s [%sx%s]"):format(config.renderingAPI, obsi.graphics.getPixelSize()), 2, 2)
-			obsi.graphics.write(("%.2f fps"):format(1/dt), 2, 3)
-			obsi.graphics.write(("%0.2fms update"):format(updateTime*1000), 2, 4)
-			obsi.graphics.write(("%0.2fms draw"):format(drawTime*1000), 2, 5)
-			obsi.graphics.write(("%0.2fms frame"):format(frameTime*1000), 2, 6)
+			obsi.graphics.write("Obsi "..obsi.version, 1, 1)
+			obsi.graphics.write(obsi.system.getHost(), 1, 2)
+			obsi.graphics.write(("rendering: %s [%sx%s]"):format(obsi.graphics.getRenderer(), obsi.graphics.getPixelSize()), 1, 3)
+			obsi.graphics.write(("%.2f fps"):format(1/dt), 1, 4)
+			obsi.graphics.write(("%0.2fms update"):format(updateTime*1000), 1, 5)
+			obsi.graphics.write(("%0.2fms draw"):format(drawTime*1000), 1, 6)
+			obsi.graphics.write(("%0.2fms frame"):format(frameTime*1000), 1, 7)
 			obsi.graphics.bgColor, obsi.graphics.fgColor = bg, fg
 		end
 		obsi.graphics.flushAll()
 		obsi.graphics.show()
-		obsi.graphics.clear()
-		obsi.graphics.bgColor, obsi.graphics.fgColor = colors.black, colors.white
-		obsi.graphics.resetOrigin()
 		frameTime = clock() - startTime
 		repeat
 			sleepRaw((1/config.maxfps)/20)
 		until (clock()-t >= 1/config.maxfps)
+		obsi.graphics.clear()
+		obsi.graphics.bgColor, obsi.graphics.fgColor = colors.black, colors.white
+		obsi.graphics.resetOrigin()
 		dt = clock()-t
 		t = clock()
 	end
@@ -154,24 +155,33 @@ local function eventLoop()
 		elseif eventData[1] == "term_resize" then
 			local w, h = term.getSize()
 			winh.reposition(1, 1, w, h)
-			if config.renderingAPI == "parea" or config.renderingAPI == "hmon" then
-				canvas:resize(w, h)
-			else
-				-- bruh pixelbox
-				pixelbox.RESIZE(canvas, w, h)
-			end
+			canvas:resize(w, h)
 			obsi.graphics.pixelWidth, obsi.graphics.pixelHeight = canvas.width, canvas.height
 			obsi.graphics.width, obsi.graphics.height = w, h
 		elseif eventData[1] == "key" and not eventData[3] then
 			obsi.keyboard.keys[keys.getName(eventData[2])] = true
 			obsi.keyboard.scancodes[eventData[2]] = true
 			obsi.keyPressed(eventData[2])
+
+			-- the code below is only for testing!
+
+			-- if eventData[2] == keys.l then
+			-- 	local rentab = {
+			-- 		["pixelbox"] = "parea",
+			-- 		["parea"] = "hmon",
+			-- 		["hmon"] = "pixelbox",
+			-- 	}
+			-- 	obsi.graphics.setRenderer(rentab[obsi.graphics.getRenderer()] or "parea")
+			-- elseif eventData[2] == keys.p then
+			-- 	obsi.debug = not obsi.debug
+			-- end
 		elseif eventData[1] == "key_up" then
 			obsi.keyboard.keys[keys.getName(eventData[2])] = false
 			obsi.keyboard.scancodes[eventData[2]] = false
 			obsi.keyReleased(eventData[2])
 		elseif eventData[1] == "terminate" then
 			obsi.quit()
+			obsi.graphics.clearPalette()
 			return
 		end
 	end

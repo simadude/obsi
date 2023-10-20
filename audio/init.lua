@@ -13,8 +13,9 @@ local path = ""
 ---@class note
 ---@field speaker integer
 ---@field pitch number
----@field instrument instrument
 ---@field volume number
+---@field instrument instrument?
+---@field sound string?
 ---@field latency number?
 ---@field timing number?
 
@@ -30,6 +31,7 @@ local path = ""
 ---@field startTime number
 ---@field holdTime number
 ---@field lastNote integer
+---@field volume number
 ---@field loop boolean
 ---@field playing boolean
 
@@ -52,6 +54,22 @@ function audio.playNote(channel, instrument, pitch, volume, latency)
 	pitch = math.max(math.min(pitch, 24), 0)
 	latency = latency or 0
 	notebuffer[#notebuffer+1] = {pitch = pitch, speaker = channel, instrument = instrument, volume = volume, latency = latency}
+	table.sort(notebuffer, function (n1, n2)
+		return n1.latency < n2.latency
+	end)
+end
+
+-- Plays a single note. If you are not sure what channel to use, just use 1.
+---@param channel integer
+---@param sound string
+---@param pitch number  from 0 to 24
+---@param volume number? from 0 to 3
+---@param latency number? in seconds
+function audio.playSound(channel, sound, pitch, volume, latency)
+	volume = math.max(math.min(volume or 1, 3), 0)
+	pitch = math.max(math.min(pitch, 24), 0)
+	latency = latency or 0
+	notebuffer[#notebuffer+1] = {pitch = pitch, speaker = channel, sound = sound, volume = volume, latency = latency}
 	table.sort(notebuffer, function (n1, n2)
 		return n1.latency < n2.latency
 	end)
@@ -127,7 +145,8 @@ function audio.play(source, loop)
 		holdTime = os.clock(),
 		lastNote = 1,
 		loop = loop or false,
-		playing = true
+		playing = true,
+		volume = 1
 	}
 	for i = 1, audiobuffer.max+1 do
 		if not audiobuffer.sounds[i] then
@@ -168,14 +187,19 @@ function audio.isID(source, id)
 	return false
 end
 
+---@param source obsi.PlayingAudio
+local function pauseAudio(source)
+	source.holdTime = os.clock()
+	source.playing = false
+end
+
 ---@param source obsi.Audio
 ---@overload fun(id: integer)
 function audio.pause(source)
 	if type(source) == "number" then
 		local s = audiobuffer.sounds[source]
 		if s then
-			s.holdTime = os.clock()
-			s.playing = false
+			pauseAudio(s)
 		end
 		return
 	end
@@ -183,10 +207,24 @@ function audio.pause(source)
 		local s = audiobuffer.sounds[i]
 		if s then
 			if s.audio == source then
-				s.holdTime = os.clock()
-				s.playing = false
+				pauseAudio(s)
 			end
 		end
+	end
+end
+
+---@param source obsi.PlayingAudio
+local function unpauseAudio(source)
+	source.startTime = os.clock()+source.startTime-source.holdTime
+	source.playing = true
+	local note = source.audio.notes[source.lastNote]
+	while note and note.timing+source.startTime < t do
+		source.lastNote = source.lastNote + 1
+		note = source.audio.notes[source.lastNote]
+	end
+	if source.lastNote > #source.audio.notes then
+		source.lastNote = 1
+		source.startTime = os.clock()
 	end
 end
 
@@ -196,36 +234,45 @@ function audio.unpause(source)
 	if type(source) == "number" then
 		local s = audiobuffer.sounds[source]
 		if s then
-			s.startTime = os.clock()+s.startTime-s.holdTime
-			s.playing = true
-			local note = s.audio.notes[s.lastNote]
-			while note and note.timing+s.startTime < t do
-				s.lastNote = s.lastNote + 1
-				note = s.audio.notes[s.lastNote]
-			end
-			if s.lastNote > #s.audio.notes then
-				s.lastNote = 1
-				s.startTime = os.clock()
-			end
+			unpauseAudio(s)
 		end
 		return
 	end
 	for i = 1, audiobuffer.max do
 		local s = audiobuffer.sounds[i]
 		if s and s.audio == source then
-			s.startTime = os.clock()+s.startTime-s.holdTime
-			s.playing = true
-			local note = s.audio.notes[s.lastNote]
-			while note and note.timing+s.startTime < t do
-				s.lastNote = s.lastNote + 1
-				note = s.audio.notes[s.lastNote]
-			end
-			if s.lastNote > #s.audio.notes then
-				s.lastNote = 1
-				s.startTime = os.clock()
-			end
+			unpauseAudio(s)
 		end
 	end
+end
+
+---@param source obsi.PlayingAudio
+---@param volume number
+local function setVolumeAudio(source, volume)
+	source.volume = volume
+end
+
+---@param source obsi.Audio
+---@param volume number
+function audio.setVolume(source, volume)
+	if type(source) == "number" then
+		local s = audiobuffer.sounds[source]
+		if s then
+			setVolumeAudio(s, volume)
+		end
+		return
+	end
+	for i = 1, audiobuffer.max do
+		local s = audiobuffer.sounds[i]
+		if s and s.audio == source then
+			setVolumeAudio(s, volume)
+		end
+	end
+end
+
+---@param id integer
+function audio.getVolume(id)
+	return audiobuffer.sounds[id] and audiobuffer.sounds[id].volume or 0
 end
 
 ---@param id integer
@@ -236,12 +283,19 @@ end
 
 ---@param dt number
 local function soundLoop(dt)
+	if dt == 0 then
+		dt = 0.025 -- should fix the crash when not using an emulator
+	end
 	t = t + dt
 	for i, note in ipairs(notebuffer) do
 		note.latency = note.latency - dt
 		if note.latency <= 0 then
 			local speaker = channels[((note.speaker-1) % #channels)+1]
-			speaker.playNote(note.instrument, note.volume, note.pitch)
+			if note.sound then
+				speaker.playSound(note.sound, note.volume, note.pitch)
+			else
+				speaker.playNote(note.instrument, note.volume, note.pitch)
+			end
 			table.remove(notebuffer, i)
 		end
 	end
@@ -252,9 +306,9 @@ local function soundLoop(dt)
 			while nextCanPlay do
 				nextCanPlay = false
 				local note = s.audio.notes[s.lastNote]
-				if note.timing+s.startTime < t then
+				if s.startTime+note.timing < t then
 					local speaker = channels[(note.speaker-1)%#channels+1]
-					speaker.playNote(note.instrument, note.volume, note.pitch)
+					speaker.playNote(note.instrument, math.min(note.volume*s.volume, 3), note.pitch)
 					s.lastNote = s.lastNote + 1
 				end
 				if s.lastNote > #s.audio.notes then

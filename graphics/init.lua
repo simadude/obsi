@@ -2,7 +2,7 @@ local parea = require("graphics.parea")
 local pixelbox = require("graphics.pixelbox")
 local nfp = require("graphics.nfpParser")
 local orli = require("graphics.orliParser")
-local hmon= require("graphics.hmon")
+local hmon = require("graphics.hmon")
 local wind = window.create(term.current(), 1, 1, term.getSize())
 wind.setVisible(false)
 ---@type parea.Canvas | pixelbox.box
@@ -505,6 +505,10 @@ function graphics.setPalette(palette)
 	end
 end
 
+function graphics.clearPalette()
+	shell.run("clear", "palette")
+end
+
 ---Internal function that clears the canvas.
 function graphics.clear()
 	for y = 1, canvas.height do
@@ -512,6 +516,28 @@ function graphics.clear()
 			canvas:setPixel(x, y, graphics.bgColor)
 		end
 	end
+end
+
+---@param rend "parea"|"hmon"|"pixelbox"
+function graphics.setRenderer(rend)
+	local tab = {
+		["parea"] = parea,
+		["hmon"] = hmon,
+		["pixelbox"] = pixelbox,
+	}
+	local renderer = tab[rend]
+	if renderer then
+		renderer.own(canvas)
+		local w, h = graphics.getSize()
+		canvas:resize(w, h)
+		graphics.pixelWidth, graphics.pixelHeight = canvas.width, canvas.height
+	else
+		error(("Unknown renderer name: %s"):format(rend))
+	end
+end
+
+function graphics.getRenderer()
+	return canvas.owner
 end
 
 ---Internal function that draws the canvas.

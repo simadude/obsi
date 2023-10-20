@@ -1,8 +1,15 @@
 local system = {}
 local isAdvanced
-local isEmulated = _HOST:lower():match("minecraft") and true or false
+local isEmulated
 local host = _HOST:match("%(.-%)"):sub(2, -2)
 local ver = _HOST:sub(15, 21)
+
+if _HOST:lower():match("minecraft") then
+	isEmulated = false
+else
+	isEmulated = true
+end
+
 do
 	local programs = shell.programs()
 	for i = 1, #programs do

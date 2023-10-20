@@ -12,8 +12,8 @@
 local PIXELBOX = {}
 
 ---@class pixelbox.object
----@field width number
----@field height number
+---@field width integer
+---@field height integer
 ---@field data any
 ---@field term any
 local OBJECT = {}
@@ -73,42 +73,6 @@ function PIXELBOX.RESTORE(BOX, color, width, height)
 	end
 
 	BOX.data = bc
-end
-
----@param BOX pixelbox.box
----@param width integer
----@param height integer
-function PIXELBOX.RESIZE(BOX, width, height)
-	local bc = BOX.data
-	width = width * 2
-	height = height * 3
-	if BOX.height > height then
-		for y = 1, BOX.height-height do
-			table.remove(bc)
-		end
-	elseif BOX.height < height then
-		for y = BOX.height, height do
-			bc[y] = {}
-			for x = 1, width do
-				bc[y][x] = colors.black
-			end
-		end
-	end
-	if BOX.width > width then
-		for y = 1, height do
-			for x = 1, BOX.width-width-1 do
-				table.remove(bc[y])
-			end
-		end
-	elseif BOX.width < width then
-		for y = 1, height do
-			for x = BOX.width+1, width do
-				bc[y][x] = colors.black
-			end
-		end
-	end
-	BOX.width = width
-	BOX.height = height
 end
 
 local function build_drawing_char(a,b,c,d,e,f)
@@ -216,6 +180,43 @@ function OBJECT:render()
 	end
 end
 
+
+---@param BOX pixelbox.box
+---@param width integer
+---@param height integer
+function PIXELBOX.RESIZE(BOX, width, height)
+	local bc = BOX.data
+	width = width * 2
+	height = height * 3
+	if BOX.height > height then
+		for y = 1, BOX.height-height do
+			table.remove(bc)
+		end
+	elseif BOX.height < height then
+		for y = BOX.height, height do
+			bc[y] = {}
+			for x = 1, width do
+				bc[y][x] = colors.black
+			end
+		end
+	end
+	if BOX.width > width then
+		for y = 1, height do
+			for x = 1, BOX.width-width-1 do
+				table.remove(bc[y])
+			end
+		end
+	elseif BOX.width < width then
+		for y = 1, height do
+			for x = BOX.width+1, width do
+				bc[y][x] = colors.black
+			end
+		end
+	end
+	BOX.width = width
+	BOX.height = height
+end
+
 ---@param color color
 function OBJECT:clear(color)
 	PIXELBOX.RESTORE(self, color)
@@ -228,6 +229,20 @@ function OBJECT:setPixel(x, y, color)
 	self.data[y][x] = color
 end
 
+---@param w integer
+---@param h integer
+function OBJECT:resize(w, h)
+	PIXELBOX.RESIZE(self, w, h)
+end
+
+function PIXELBOX.own(canvas)
+	canvas.clear = OBJECT.clear
+	canvas.render = OBJECT.render
+	canvas.resize = OBJECT.resize
+	canvas.setPixel = OBJECT.setPixel
+	canvas.owner = "pixelbox"
+end
+
 ---@param terminal Redirect
 ---@param bg color?
 ---@return pixelbox.box
@@ -235,11 +250,15 @@ function PIXELBOX.new(terminal, bg)
 	bg = bg or terminal.getBackgroundColor() or colors.black
 	---@class pixelbox.box: pixelbox.object
 	local BOX = {}
-	local w,h = terminal.getSize()
+	local w, h = terminal.getSize()
 	BOX.term = terminal
-	setmetatable(BOX,{__index = OBJECT})
+	BOX.clear = OBJECT.clear
+	BOX.render = OBJECT.render
+	BOX.resize = OBJECT.resize
+	BOX.setPixel = OBJECT.setPixel
 	BOX.width  = w * 2
 	BOX.height = h * 3
+	BOX.owner = "pixelbox"
 	PIXELBOX.RESTORE(BOX, bg)
 	return BOX
 end
