@@ -578,5 +578,5 @@ return function (gamePath, renderingAPI)
 	end
 	graphics.pixelWidth, graphics.pixelHeight = canvas.width, canvas.height
 	path = gamePath
-	return graphics, canvas, wind, pixelbox
+	return graphics, canvas, wind
 end

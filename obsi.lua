@@ -49,17 +49,16 @@ end
 local canvas
 ---@type Window
 local winh
-local pixelbox
-local soundLoop
+local soundLoop, mouseDown, mouseMove, mouseUp
 obsi.system = require("system")
-obsi.graphics, canvas, winh, pixelbox = require("graphics")(gamePath, config.renderingAPI)
+obsi.graphics, canvas, winh = require("graphics")(gamePath, config.renderingAPI)
 obsi.time = require("time")
 obsi.keyboard = require("keyboard")
-obsi.mouse = require("mouse")(obsi.system.isAdvanced())
+obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
 obsi.audio, soundLoop = require("audio")(gamePath)
 local emptyFunc = function(...) end
 obsi.debug = false
-obsi.version = "1.2.0"
+obsi.version = "1.3.0"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
 
 local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
@@ -74,6 +73,8 @@ obsi.load = obsi.load or emptyFunc
 obsi.update = obsi.update or emptyFunc
 obsi.draw = obsi.draw or emptyFunc
 obsi.mousePressed = obsi.mousePressed or emptyFunc
+obsi.mouseReleased = obsi.mouseReleased or emptyFunc
+obsi.mouseMoved = obsi.mouseMoved or emptyFunc
 obsi.keyPressed = obsi.keyPressed or emptyFunc
 obsi.keyReleased = obsi.keyReleased or emptyFunc
 obsi.quit = obsi.quit or emptyFunc
@@ -151,7 +152,17 @@ local function eventLoop()
 	while true do
 		local eventData = {os.pullEventRaw()}
 		if eventData[1] == "mouse_click" then
+			mouseDown(eventData[3], eventData[4], eventData[2])
 			obsi.mousePressed(eventData[3], eventData[4], eventData[2])
+		elseif eventData[1] == "mouse_up" then
+			mouseUp(eventData[3], eventData[4], eventData[2])
+			obsi.mouseReleased(eventData[3], eventData[4], eventData[2])
+		elseif eventData[1] == "mouse_move" then -- apparently the second index is only there for compatibility? Alright.
+			mouseMove(eventData[3], eventData[4])
+			obsi.mouseMoved(eventData[3], eventData[4])
+		elseif eventData[1] == "mouse_drag" then
+			mouseMove(eventData[3], eventData[4])
+			obsi.mouseMoved(eventData[3], eventData[4])
 		elseif eventData[1] == "term_resize" then
 			local w, h = term.getSize()
 			winh.reposition(1, 1, w, h)
@@ -163,7 +174,7 @@ local function eventLoop()
 			obsi.keyboard.scancodes[eventData[2]] = true
 			obsi.keyPressed(eventData[2])
 
-			-- the code below is only for testing!
+			-- --the code below is only for testing!
 
 			-- if eventData[2] == keys.l then
 			-- 	local rentab = {

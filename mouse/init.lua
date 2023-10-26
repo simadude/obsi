@@ -1,24 +1,59 @@
 local mouse = {}
-local lastx, lasty, lastc = 0, 0, 0
-local isAvailable = false
+local buttons = {}
+local mx, my = 0, 0
 
-mouse.getLastPosition = function ()
-	return lastx, lasty
+---Returns the position of the mouse on X axis. 
+---@return integer
+mouse.getX = function ()
+	return mx
 end
 
-mouse.getLastButton = function ()
-	return lastc
+---Returns the position of the mouse on Y axis.
+---@return integer
+mouse.getY = function ()
+	return my
 end
 
-mouse.isAvailable = function ()
-	return isAvailable
+---Returns the position of the mouse.
+---@return integer, integer
+mouse.getPosition = function ()
+	return mx, my
 end
 
-local function setMouse(x, y, c)
-	lastx, lasty, lastc = x, y, c
+---Returns either true or false if "mouse_move" event can fire on CraftOS-PC.
+---@return boolean
+mouse.canMove = function ()
+	return not not (config and (config.get("mouse_move_throttle") >= 0))
 end
 
-return function (exists)
-	isAvailable = exists
-	return mouse, setMouse
+---Returns if true or false if the mouse button is down.
+---@param button integer
+mouse.isDown = function (button)
+	return buttons[button] or false
+end
+
+---@param qx integer
+---@param qy integer
+---@param b integer
+local function setMouseDown(qx, qy, b)
+	mx, my = qx, qy
+	buttons[b] = true
+end
+
+---@param qx integer
+---@param qy integer
+---@param b integer
+local function setMouseUp(qx, qy, b)
+	mx, my = qx, qy
+	buttons[b] = false
+end
+
+---@param qx integer
+---@param qy integer
+local function setMousePos(qx, qy)
+	mx, my = qx or mx, qy or my
+end
+
+return function ()
+	return mouse, setMouseDown, setMouseUp, setMousePos
 end
