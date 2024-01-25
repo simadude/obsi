@@ -1,6 +1,10 @@
-# Obsi Game Engine (1.3.0)
+# Obsi Game Engine (1.4.0)
 
 Changes from the previous release:
-* Rewrite of `obsi.mouse` module.
-* New callback functions: `obsi.mousePressed`, `obsi.mouseReleased`, `obsi.mouseMoved`.
-* New functions in `obsi.mouse`: `obsi.mouse.getX`, `obsi.mouse.getY`, `obsi.mouse.getPosition`, `obsi.mouse.canMove`, `obsi.mouse.isDown`.
+* Added new objects: `obsi.Canvas`, `obsi.Scene`.
+* Added a new module `obsi.state` for managing the new scene objects as well as global game variables.
+* New callback functions: `obsi.resize`, `obsi.windowFlush`, `obsi.onEvent`.
+* Exposing the `window` object using `obsi.windowFlush`.
+* Error handling on crashes.
+* Removal of certain if-statements for (hopefully) improving performance.
+* Improved performance for orli parser.

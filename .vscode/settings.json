@@ -1,5 +1,15 @@
 {
-    "Lua.workspace.library": [
-        "/home/sima/open_source/LLS-plugins/CC-Tweaked/library"
-    ]
+	"Lua.workspace.library": [
+		"/home/sima/open_source/LLS-plugins/CC-Tweaked/library"
+	],
+	"Lua.runtime.version": "Lua 5.3",
+	"Lua.diagnostics.globals": [
+		"config",
+		"bit32",
+		"bit",
+		"periphemu"
+	],
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false
 }

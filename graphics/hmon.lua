@@ -63,9 +63,6 @@ end
 ---@param y integer
 ---@param color color
 function template:setPixel(x, y, color)
-	if y > #self.data then
-		error(("y: %s, max: %s"):format(y, #self.data))
-	end
 	self.data[y][x] = color
 end
 

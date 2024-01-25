@@ -33,7 +33,7 @@ env.require, env.package = r.make(env, gamePath)
 if fs.exists(fs.combine(gamePath, "config.lua")) then
 	local chunk, err = loadfile(fs.combine(gamePath, "config.lua"), "bt", env)
 	if not chunk then
-		printError(("obsi: config.lua file is found but can't be run!"))
+		printError(("obsi: config.lua file is found but can't be executed!"))
 		printError(err)
 		return
 	end
@@ -50,15 +50,15 @@ local canvas
 ---@type Window
 local winh
 local soundLoop, mouseDown, mouseMove, mouseUp
+local emptyFunc = function(...) end
 obsi.system = require("system")
 obsi.graphics, canvas, winh = require("graphics")(gamePath, config.renderingAPI)
 obsi.time = require("time")
 obsi.keyboard = require("keyboard")
 obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
 obsi.audio, soundLoop = require("audio")(gamePath)
-local emptyFunc = function(...) end
 obsi.debug = false
-obsi.version = "1.3.0"
+obsi.version = "1.4.0"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
 
 local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
@@ -67,17 +67,21 @@ if not chunk then
 	printError(err)
 	return
 end
-chunk()
 
-obsi.load = obsi.load or emptyFunc
-obsi.update = obsi.update or emptyFunc
-obsi.draw = obsi.draw or emptyFunc
-obsi.mousePressed = obsi.mousePressed or emptyFunc
-obsi.mouseReleased = obsi.mouseReleased or emptyFunc
-obsi.mouseMoved = obsi.mouseMoved or emptyFunc
-obsi.keyPressed = obsi.keyPressed or emptyFunc
-obsi.keyReleased = obsi.keyReleased or emptyFunc
-obsi.quit = obsi.quit or emptyFunc
+obsi.load = emptyFunc
+obsi.update = emptyFunc
+obsi.draw = emptyFunc
+obsi.mousePressed = emptyFunc
+obsi.mouseReleased = emptyFunc
+obsi.mouseMoved = emptyFunc
+obsi.keyPressed = emptyFunc
+obsi.keyReleased = emptyFunc
+obsi.windowFlush = emptyFunc -- sends a window object as a first argument, which you can mutate if you wish.
+obsi.resize = emptyFunc	-- sends width and height of the window in characters, not pixels. 
+obsi.onEvent = emptyFunc -- for any events that aren't caught! Runs last so that you won't mutate it.
+obsi.quit = emptyFunc -- called when Obsi recieves "terminate" event.
+
+chunk()
 
 local function clock()
 	return periphemu and os.epoch(("nano")--[[@as "local"]])/10^9 or os.clock()
@@ -121,6 +125,7 @@ local function gameLoop()
 		startTime = clock()
 		obsi.draw(dt)
 		drawTime = clock() - startTime
+		obsi.graphics.setCanvas()
 		soundLoop(dt)
 		if obsi.debug then
 			local bg, fg = obsi.graphics.bgColor, obsi.graphics.fgColor
@@ -134,6 +139,7 @@ local function gameLoop()
 			obsi.graphics.write(("%0.2fms frame"):format(frameTime*1000), 1, 7)
 			obsi.graphics.bgColor, obsi.graphics.fgColor = bg, fg
 		end
+		obsi.windowFlush(winh)
 		obsi.graphics.flushAll()
 		obsi.graphics.show()
 		frameTime = clock() - startTime
@@ -169,6 +175,7 @@ local function eventLoop()
 			canvas:resize(w, h)
 			obsi.graphics.pixelWidth, obsi.graphics.pixelHeight = canvas.width, canvas.height
 			obsi.graphics.width, obsi.graphics.height = w, h
+			obsi.resize(w, h)
 		elseif eventData[1] == "key" and not eventData[3] then
 			obsi.keyboard.keys[keys.getName(eventData[2])] = true
 			obsi.keyboard.scancodes[eventData[2]] = true
@@ -193,11 +200,21 @@ local function eventLoop()
 		elseif eventData[1] == "terminate" then
 			obsi.quit()
 			obsi.graphics.clearPalette()
+			term.setBackgroundColor(colors.black)
+			term.clear()
+			term.setCursorPos(1, 1)
 			return
 		end
+		obsi.onEvent(eventData)
 	end
 end
 
-parallel.waitForAny(gameLoop, eventLoop)
-term.clear()
-term.setCursorPos(1, 1)
+local function catch(err)
+	obsi.graphics.clearPalette()
+	term.setBackgroundColor(colors.black)
+	term.clear()
+	term.setCursorPos(1, 1)
+	printError(debug.traceback(err, 2))
+end
+
+parallel.waitForAny(function() xpcall(gameLoop, catch) end, function() xpcall(eventLoop, catch) end)
