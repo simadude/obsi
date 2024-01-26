@@ -58,7 +58,7 @@ obsi.keyboard = require("keyboard")
 obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
 obsi.audio, soundLoop = require("audio")(gamePath)
 obsi.debug = false
-obsi.version = "1.4.0"
+obsi.version = "1.4.1"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
 
 local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
@@ -139,8 +139,8 @@ local function gameLoop()
 			obsi.graphics.write(("%0.2fms frame"):format(frameTime*1000), 1, 7)
 			obsi.graphics.bgColor, obsi.graphics.fgColor = bg, fg
 		end
-		obsi.windowFlush(winh)
 		obsi.graphics.flushAll()
+		obsi.windowFlush(winh)
 		obsi.graphics.show()
 		frameTime = clock() - startTime
 		repeat

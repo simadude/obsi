@@ -8,3 +8,8 @@ Changes from the previous release:
 * Error handling on crashes.
 * Removal of certain if-statements for (hopefully) improving performance.
 * Improved performance for orli parser.
+
+## Obsi Game Engine (1.4.1)
+
+Changes from the previous release:
+* Fixed `obsi.windowFlush` being called with cleared Window object.
