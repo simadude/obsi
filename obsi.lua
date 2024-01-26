@@ -57,6 +57,7 @@ obsi.time = require("time")
 obsi.keyboard = require("keyboard")
 obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
 obsi.audio, soundLoop = require("audio")(gamePath)
+obsi.state = require("state")
 obsi.debug = false
 obsi.version = "1.4.1"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
