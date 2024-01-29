@@ -13,3 +13,8 @@ Changes from the previous release:
 
 Changes from the previous release:
 * Fixed `obsi.windowFlush` being called with cleared Window object.
+
+## Obsi Game Engine (1.4.2)
+
+Changes from the previous release:
+* Added missing `obsi.graphics.getBackgroundColor()` and `obsi.graphics.getForegroundColor()`

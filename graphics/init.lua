@@ -168,6 +168,16 @@ function graphics.setForegroundColor(color)
 	graphics.fgColor = toColor(color)
 end
 
+---@return color
+function graphics.getBackgroundColor()
+	return graphics.bgColor
+end
+
+---@return color
+function graphics.getForegroundColor()
+	return graphics.fgColor
+end
+
 ---@param x number
 ---@param y number
 ---@return boolean
