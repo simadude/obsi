@@ -1,8 +1,23 @@
 local nfp = {}
 
----Returns an inconsistent 2D array of colors, as well as its maximum width and height
+---Takes inconsistent 2D array as an argument and returns a consistent one instead.
+---@param badData integer[][]
+---@param width integer
+---@param height integer
+---@return integer[][]
+function nfp.consise(badData, width, height)
+	local goodData = {}
+	for y = 1, height do
+		goodData[y] = {}
+		for x = 1, width do
+			goodData[y][x] = badData[y] and badData[y][x] or -1
+		end
+	end
+	return goodData
+end
+
 ---@param text string
----@return integer[][], integer, integer
+---@return integer[][]
 function nfp.parseNFP(text)
 	local x, y = 1, 1
 	local width = 0
@@ -24,24 +39,8 @@ function nfp.parseNFP(text)
 			x = x + 1
 		end
 	end
-	--- y == height
-	return data, width, y
-end
 
----Takes inconsistent 2D array as an argument and returns a consistent one instead.
----@param badData integer[][]
----@param width integer
----@param height integer
----@return integer[][]
-function nfp.consise(badData, width, height)
-	local goodData = {}
-	for y = 1, height do
-		goodData[y] = {}
-		for x = 1, width do
-			goodData[y][x] = badData[y] and badData[y][x] or -1
-		end
-	end
-	return goodData
+	return nfp.consise(data, width, y)
 end
 
 return nfp

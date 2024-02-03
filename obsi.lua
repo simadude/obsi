@@ -51,15 +51,17 @@ local canvas
 local winh
 local soundLoop, mouseDown, mouseMove, mouseUp
 local emptyFunc = function(...) end
+local fsInit
+obsi.filesystem, fsInit = require("filesystem.init")(gamePath)
 obsi.system = require("system")
-obsi.graphics, canvas, winh = require("graphics")(gamePath, config.renderingAPI)
+obsi.graphics, canvas, winh = require("graphics")(obsi.filesystem, config.renderingAPI)
 obsi.time = require("time")
 obsi.keyboard = require("keyboard")
 obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
-obsi.audio, soundLoop = require("audio")(gamePath)
+obsi.audio, soundLoop = require("audio")(obsi.filesystem)
 obsi.state = require("state")
 obsi.debug = false
-obsi.version = "1.4.2"
+obsi.version = "1.5.0"
 -- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
 
 local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
@@ -82,8 +84,6 @@ obsi.resize = emptyFunc	-- sends width and height of the window in characters, n
 obsi.onEvent = emptyFunc -- for any events that aren't caught! Runs last so that you won't mutate it.
 obsi.quit = emptyFunc -- called when Obsi recieves "terminate" event.
 
-chunk()
-
 local function clock()
 	return periphemu and os.epoch(("nano")--[[@as "local"]])/10^9 or os.clock()
 end
@@ -105,6 +105,9 @@ local dt = 1/config.maxfps
 local drawTime = t
 local updateTime = t
 local frameTime = t
+
+fsInit() -- use game's path
+chunk() -- execute the main.lua
 
 local function gameLoop()
 	obsi.load()

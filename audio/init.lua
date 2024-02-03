@@ -1,3 +1,4 @@
+local filesystem
 local onb = require("audio.onbParser")
 local nbs = require("audio.nbsParser")
 local t = os.clock()
@@ -119,18 +120,11 @@ end
 ---@param soundPath path
 ---@return obsi.Audio
 function audio.newSound(soundPath)
-	soundPath = fs.combine(path, soundPath)
-	if not fs.exists(soundPath) then
-		error(("Sound path does not exist: %s"):format(path), 2)
-	elseif fs.isDir(soundPath) then
-		error(("Sound path is a directory: %s"):format(path), 2)
-	end
-	local fh, e = fs.open(soundPath, "rb")
-	if not fh then
+	local contents, e = filesystem.read(soundPath)
+	if not contents then
 		error(e)
 	end
-	local mus = soundPath:lower():sub(-3) == "onb" and onb.parseONB(fh:readAll()) or nbs.parseNBS(fh:readAll())
-	fh.close()
+	local mus = soundPath:lower():sub(-3) == "onb" and onb.parseONB(contents) or nbs.parseNBS(contents)
 	return mus
 end
 
@@ -326,8 +320,10 @@ local function soundLoop(dt)
 	end
 end
 
-return function (gamePath)
-	path = gamePath
+local function init(obsifilesystem)
+	filesystem = obsifilesystem
 	audio.refreshChannels()
 	return audio, soundLoop
 end
+
+return init

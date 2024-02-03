@@ -1,3 +1,4 @@
+local filesystem
 local parea = require("graphics.parea")
 local pixelbox = require("graphics.pixelbox")
 local nfp = require("graphics.nfpParser")
@@ -7,7 +8,6 @@ local wind = window.create(term.current(), 1, 1, term.getSize())
 wind.setVisible(false)
 
 local graphics = {}
-local path = ""
 
 local floor, ceil, abs, max = math.floor, math.ceil, math.abs, math.max
 
@@ -61,15 +61,15 @@ end
 function graphics.setPaletteColor(color, r, g, b)
 	if type(color) == "string" then
 		if #color ~= 1 then
-			error(("Argument `color: string` must be 1 character long, not %s"):format(#color), 2)
+			error(("Argument `color: string` must be 1 character long, not %s"):format(#color))
 		end
 		color = tonumber(color, 16)
 		if not color then
-			error(("Argument `color: string` must be a valid hex character, not %s"):format(color), 2)
+			error(("Argument `color: string` must be a valid hex character, not %s"):format(color))
 		end
 		color = 2^color
 	elseif type(color) ~= "number" then
-		error(("Argument `color` must be either integer or string, not %s"):format(type(color)), 2)
+		error(("Argument `color` must be either integer or string, not %s"):format(type(color)))
 	end
 	checkType(r, "number", "r")
 	checkType(g, "number", "g")
@@ -277,11 +277,12 @@ local function getCorrectImage(imagePath, contents)
 	local data, width, height
 	--- Parse images
 	if imagePath:sub(-4):lower() == ".nfp" then
-		local badData, w, h = nfp.parseNFP(contents)
-		data = nfp.consise(badData, w, h)
-		width, height = w, h
+		data = nfp.parseNFP(contents)
+		width, height = #data[1], #data
 	elseif imagePath:sub(-5):lower() == ".orli" then
 		data, width, height = orli.parse(contents)
+	else
+		error(("Extension of the image is not supported: %s"):format(imagePath), 2)
 	end
 	image.data = data
 	image.width = width
@@ -292,19 +293,9 @@ end
 ---@param imagePath path
 ---@return obsi.Image
 function graphics.newImage(imagePath)
-	imagePath = fs.combine(path, imagePath)
-	if not fs.exists(imagePath) then
-		error(("Image path does not exist: %s"):format(imagePath), 2)
-	elseif fs.isDir(imagePath) then
-		error(("Image path is a directory: %s"):format(imagePath), 2)
-	end
-	local fh, e = fs.open(imagePath, "rb")
-	if not fh then
-		error(e)
-	end
-	local contents = fh.readAll()
+	local contents, e = filesystem.read(imagePath)
 	if not contents then
-		error(("Image file is empty: %s"):format(imagePath))
+		error(e)
 	end
 	local image = getCorrectImage(imagePath, contents)
 	return image
@@ -342,28 +333,16 @@ end
 ---@param imagePath path
 ---@return obsi.Image[]
 function graphics.newImagesFromTilesheet(imagePath, tileWidth, tileHeight)
-	imagePath = fs.combine(path, imagePath)
-	if not fs.exists(imagePath) then
-		error(("Image path does not exist: %s"):format(imagePath), 2)
-	elseif fs.isDir(imagePath) then
-		error(("Image path is a directory: %s"):format(imagePath), 2)
-	end
-
-	local fh, e = fs.open(imagePath, "rb")
-	if not fh then
-		error(e)
-	end
-
-	local contents = fh.readAll()
+	local contents, e = filesystem.read(imagePath)
 	if not contents then
-		error(("Image file is empty: %s"):format(imagePath))
+		error(e)
 	end
 	local map = getCorrectImage(imagePath, contents)
 
 	if map.width % tileWidth ~= 0 then
-		error(("Tilemap width can't be divided by tile's width: %s and %s"):format(map.width, tileWidth), 2)
+		error(("Tilemap width can't be divided by tile's width: %s and %s"):format(map.width, tileWidth))
 	elseif map.height % tileHeight ~= 0 then
-		error(("Tilemap height can't be divided by tile's height: %s and %s"):format(map.height, tileHeight), 2)
+		error(("Tilemap height can't be divided by tile's height: %s and %s"):format(map.height, tileHeight))
 	end
 
 	local images = {}
@@ -530,9 +509,9 @@ function graphics.write(text, x, y, fgColor, bgColor)
 	---@cast bgColor string|nil
 
 	if type(fgColor) ~= "string" then
-		error("fgColor is not a number or a string!", 2)
+		error("fgColor is not a number or a string!")
 	elseif type(bgColor) ~= "string" then
-		error("bgColor is not a number or a string!", 2)
+		error("bgColor is not a number or a string!")
 	end
 
 	textPiece.fgColor = fgColor
@@ -549,21 +528,14 @@ end
 ---@return obsi.Palette
 function graphics.newPalette(palettePath)
 	checkType(palettePath, "string", "palettePath")
-
-	palettePath = fs.combine(path, palettePath)
-	if not fs.exists(palettePath) then
-		error(("Palette path does not exist: %s"):format(palettePath), 2)
-	elseif fs.isDir(palettePath) then
-		error(("Palette path is a directory: %s"):format(palettePath), 2)
-	end
-	local fh, e = fs.open(palettePath, "r")
+	local fh, e = filesystem.newFile(palettePath, "r")
 	if not fh then
 		error(e)
 	end
 
 	local cols = {}
 	for i = 1, 16 do
-		local line = fh.readLine()
+		local line = fh.file.readLine()
 		if not line then
 			error("File could not be read completely!")
 		end
@@ -580,7 +552,7 @@ function graphics.newPalette(palettePath)
 		cols[i] = {table.unpack(occurrences)}
 	end
 
-	fh.close()
+	fh:close()
 	return {data = cols}
 end
 
@@ -665,7 +637,7 @@ function graphics.show()
 	wind.setVisible(false)
 end
 
-return function (gamePath, renderingAPI)
+return function (obsifilesystem, renderingAPI)
 	if renderingAPI == "parea" then
 		internalCanvas = parea.newCanvas(wind)
 	elseif renderingAPI == "hmon" then
@@ -675,6 +647,6 @@ return function (gamePath, renderingAPI)
 	end
 	graphics.pixelWidth, graphics.pixelHeight = internalCanvas.width, internalCanvas.height
 	currentCanvas = internalCanvas
-	path = gamePath
+	filesystem = obsifilesystem
 	return graphics, internalCanvas, wind
 end

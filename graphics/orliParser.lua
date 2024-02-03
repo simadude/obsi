@@ -1,3 +1,4 @@
+---@diagnostic disable: deprecated
 local orli = {}
 local max, floor, ceil, log = math.max, math.floor, math.ceil, math.log
 local brs, band = bit32.rshift, bit32.band

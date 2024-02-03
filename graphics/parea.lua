@@ -31,9 +31,6 @@ function template:render()
 	local setCursorPos = self.term.setCursorPos
 	local _, termHeight = self.term.getSize()
 	termHeight = floor((termHeight+1)/2)*2
-	if self.height % 3 ~= 0 or self.height ~= #self.data then
-		error(("THE CANVAS IS WEIRD! CAN'T RENDER!\nself.height=%s, #self.data=%s"):format(self.height, #self.data))
-	end
 	local subposup = true
 	-- local by = 1
 	local y = 1
@@ -68,7 +65,7 @@ function template:resize(w, h)
 			table.remove(self.data)
 		end
 	elseif self.height < h then
-		for y = self.height, h do
+		for y = self.height+1, h do
 			self.data[y] = {}
 			for x = 1, w do
 				self.data[y][x] = colors.black

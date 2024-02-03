@@ -1,20 +1,9 @@
-# Obsi Game Engine (1.4.0)
+# Obsi Game Engine (1.5.0)
 
 Changes from the previous release:
-* Added new objects: `obsi.Canvas`, `obsi.Scene`.
-* Added a new module `obsi.state` for managing the new scene objects as well as global game variables.
-* New callback functions: `obsi.resize`, `obsi.windowFlush`, `obsi.onEvent`.
-* Exposing the `window` object using `obsi.windowFlush`.
-* Error handling on crashes.
-* Removal of certain if-statements for (hopefully) improving performance.
-* Improved performance for orli parser.
-
-## Obsi Game Engine (1.4.1)
-
-Changes from the previous release:
-* Fixed `obsi.windowFlush` being called with cleared Window object.
-
-## Obsi Game Engine (1.4.2)
-
-Changes from the previous release:
-* Added missing `obsi.graphics.getBackgroundColor()` and `obsi.graphics.getForegroundColor()`
+* Added new object with filesystem: `obsi.File`
+* Added new module for working with game's directory: `obsi.filesystem` (very similar to Love2D's except for some missing features.)
+* Added new functions for the module: `obsi.filesystem.newFile`, `obsi.filesystem.getInfo`, `obsi.filesystem.read`, `obsi.filesystem.write`, `obsi.filesystem.lines`
+* Modules like `obsi.audio` and `obsi.graphics` now depend on `obsi.filesystem`
+* New version of rendering API `pixelbox` is now used, which is 5-7x better than the older version. Allows native performance for better resolution.
+* Some error messages were changed for better debugging of the engine.
