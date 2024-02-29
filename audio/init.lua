@@ -2,6 +2,7 @@ local filesystem
 local onb = require("audio.onbParser")
 local nbs = require("audio.nbsParser")
 local t = os.clock()
+---@class obsi.audio
 local audio = {}
 
 ---@type Speaker[]

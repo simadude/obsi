@@ -1,3 +1,4 @@
+---@class obsi.mouse
 local mouse = {}
 local buttons = {}
 local mx, my = 0, 0

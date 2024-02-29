@@ -7,6 +7,7 @@ local hmon = require("graphics.hmon")
 local wind = window.create(term.current(), 1, 1, term.getSize())
 wind.setVisible(false)
 
+---@class obsi.graphics
 local graphics = {}
 
 local floor, ceil, abs, max = math.floor, math.ceil, math.abs, math.max

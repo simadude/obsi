@@ -24,7 +24,7 @@ Features that are not implemented:
 * Triangles (Did I mention that this is a 2D game engine?)
 * Bundler/minifier - There are plans for Obsi to have a bundler in the repository, so that when you download it, you can bundle everything up and reduce its size significantly.
 
-The engine doesn't have a release version, so you can either download it with `git clone` or `pastebin `
+The engine doesn't have a release version, so you can either download it with `git clone` or `pastebin run WaaN2LzZ`
 
 Credits:
 

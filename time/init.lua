@@ -1,3 +1,4 @@
+---@class obsi.time
 local time = {}
 local initTime = os.clock()
 

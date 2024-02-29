@@ -1,3 +1,4 @@
+---@class obsi.system
 local system = {}
 local isAdvanced
 local isEmulated

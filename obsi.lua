@@ -1,4 +1,5 @@
-local gamePath = arg[1]
+local args = {...}
+local gamePath = args[1]
 if not gamePath then
 	printError("Obsi error: No path specified!")
 	printError("Usage: obsi <path>")
@@ -18,14 +19,28 @@ elseif not fs.isDir(gamePath) then
 end
 ---@class obsi
 obsi = {}
----@type function
-obsi.config = nil
+
+---@class obsi.Config
 local config = {
 	maxfps = 20,
 	mintps = 60,
 	multiUpdate = true,
 	renderingAPI = "parea"
 }
+
+---@type fun(tab: obsi.Config)
+obsi.config = nil
+
+local function catch(err)
+	obsi.graphics.clearPalette()
+	term.setBackgroundColor(colors.black)
+	term.clear()
+	term.setCursorPos(1, 1)
+	printError(debug.traceback(err, 2))
+	-- if obsi.debugger then
+	-- 	obsi.debugger.print(debug.traceback(err, 2))
+	-- end
+end
 
 local r = require "cc.require"
 local env = setmetatable({obsi = obsi}, { __index = _G })
@@ -37,7 +52,7 @@ if fs.exists(fs.combine(gamePath, "config.lua")) then
 		printError(err)
 		return
 	end
-	chunk()
+	xpcall(chunk, catch)
 	if obsi.config then
 		obsi.config(config)
 	end
@@ -45,15 +60,21 @@ if fs.exists(fs.combine(gamePath, "config.lua")) then
 	--	config.maxfps = config.mintps
 	-- end
 end
----@type parea.Canvas|pixelbox.box
+
+-- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger")) or {print = function (...) end}
+-- _G.debugger = _G.debugger or obsi.debugger
+---@type obsi.Canvas|parea.Canvas
 local canvas
 ---@type Window
 local winh
+---@type fun(), fun(), fun(), fun()
 local soundLoop, mouseDown, mouseMove, mouseUp
 local emptyFunc = function(...) end
+---@type fun()
 local fsInit
 obsi.filesystem, fsInit = require("filesystem.init")(gamePath)
 obsi.system = require("system")
+---@type obsi.graphics, obsi.Canvas|parea.Canvas, Window
 obsi.graphics, canvas, winh = require("graphics")(obsi.filesystem, config.renderingAPI)
 obsi.time = require("time")
 obsi.keyboard = require("keyboard")
@@ -61,8 +82,7 @@ obsi.mouse, mouseDown, mouseUp, mouseMove = require("mouse")()
 obsi.audio, soundLoop = require("audio")(obsi.filesystem)
 obsi.state = require("state")
 obsi.debug = false
-obsi.version = "1.5.0"
--- obsi.debugger = peripheral.find("debugger") or (periphemu and periphemu.create("right", "debugger") and peripheral.find("debugger"))
+obsi.version = "1.5.1"
 
 local chunk, err = loadfile(fs.combine(gamePath, "main.lua"), "bt", env)
 if not chunk then
@@ -72,16 +92,27 @@ if not chunk then
 end
 
 obsi.load = emptyFunc
+---@type fun(dt: number)
 obsi.update = emptyFunc
+---@type fun(dt: number)
 obsi.draw = emptyFunc
+---@type fun(x: number, y: number, button: integer)
 obsi.mousePressed = emptyFunc
+---@type fun(x: number, y: number, button: integer)
 obsi.mouseReleased = emptyFunc
+---@type fun(x: number, y: number)
 obsi.mouseMoved = emptyFunc
+---@type fun(key: integer)
 obsi.keyPressed = emptyFunc
+---@type fun(key: integer)
 obsi.keyReleased = emptyFunc
+---@type fun(wind: Window)
 obsi.windowFlush = emptyFunc -- sends a window object as a first argument, which you can mutate if you wish.
+---@type fun(w: integer, h: integer)
 obsi.resize = emptyFunc	-- sends width and height of the window in characters, not pixels. 
+---@type fun(eventData: table)
 obsi.onEvent = emptyFunc -- for any events that aren't caught! Runs last so that you won't mutate it.
+---@type fun()
 obsi.quit = emptyFunc -- called when Obsi recieves "terminate" event.
 
 local function clock()
@@ -107,7 +138,6 @@ local updateTime = t
 local frameTime = t
 
 fsInit() -- use game's path
-chunk() -- execute the main.lua
 
 local function gameLoop()
 	obsi.load()
@@ -143,6 +173,7 @@ local function gameLoop()
 			obsi.graphics.write(("%0.2fms frame"):format(frameTime*1000), 1, 7)
 			obsi.graphics.bgColor, obsi.graphics.fgColor = bg, fg
 		end
+		-- obsi.debugger.print(("%0.2fms frame [%sx%s]"):format(frameTime*1000, obsi.graphics.getPixelSize()))
 		obsi.graphics.flushAll()
 		obsi.windowFlush(winh)
 		obsi.graphics.show()
@@ -213,12 +244,8 @@ local function eventLoop()
 	end
 end
 
-local function catch(err)
-	obsi.graphics.clearPalette()
-	term.setBackgroundColor(colors.black)
-	term.clear()
-	term.setCursorPos(1, 1)
-	printError(debug.traceback(err, 2))
+local s = xpcall(chunk, catch) -- execute the main.lua
+if not s then
+	return
 end
-
 parallel.waitForAny(function() xpcall(gameLoop, catch) end, function() xpcall(eventLoop, catch) end)

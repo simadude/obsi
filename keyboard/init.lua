@@ -1,3 +1,4 @@
+---@class obsi.keyboard
 local keyboard = {}
 keyboard.keys = {}
 keyboard.scancodes = {}

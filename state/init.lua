@@ -1,3 +1,4 @@
+---@class obsi.state
 local state = {}
 local globals = {}
 ---@type table<string, obsi.Scene>

@@ -1,3 +1,4 @@
+---@class obsi.filesystem
 local filesystem = {}
 local useGamePath = false
 local gamePath = ""
@@ -14,6 +15,28 @@ local function getPath(path)
 	return useGamePath and fs.combine(gamePath, path) or path
 end
 
+---@param dirPath any
+---@return boolean, string?
+function filesystem.createDirectory(dirPath)
+	local dp, e = getPath(dirPath)
+	if not dp then
+		return false, e
+	end
+	local suc = pcall(fs.makeDir, dp)
+	return suc
+end
+
+---@param dirPath any
+---@return table|nil, string?
+function filesystem.getDirectoryItems(dirPath)
+	local dp, e = getPath(dirPath)
+	if not dp then
+		return nil, e
+	end
+	local suc, res = pcall(fs.list, dp)
+	return suc and res or {}
+end
+
 ---Creates a new obsi.File object. Does not necessarily create a new file. Needs to be opened manually for writing.
 ---@param filePath string
 ---@param fileMode? fileMode
@@ -28,7 +51,7 @@ function filesystem.newFile(filePath, fileMode)
 	---@class obsi.File
 	local file = {}
 
-	file.path = filePath
+	file.path = fp
 	file.name = fs.getName(filePath)
 
 	---@alias fileMode "c"|"r"|"w"|"a"
@@ -40,7 +63,7 @@ function filesystem.newFile(filePath, fileMode)
 		if mode == "c" then
 			return
 		end
-		local f, e = fs.open(self.path, mode ~= "r" and mode.."b" or mode)
+		local f, e = fs.open(self.path, mode and mode.."b")
 		if not f then
 			return false, e
 		end
@@ -161,19 +184,31 @@ function filesystem.read(filePath)
 	if not fh then
 		return nil, e
 	end
-	return fh.readAll() or ""
+	local contents = fh.readAll() or ""
+	fh.close()
+	return contents
 end
 
 ---@param filePath string
 ---@param data string
+---@return boolean, string?
 function filesystem.write(filePath, data)
 	filePath = getPath(filePath)
 	local fh, e = fs.open(filePath, "wb")
 	if not fh then
-		return nil, e
+		return false, e
 	end
 	fh.write(data)
 	fh.close()
+	return true
+end
+
+---@param path string
+---@return boolean, string?
+function filesystem.remove(path)
+	path = getPath(path)
+	local r, e = pcall(fs.delete, path)
+	return r, e
 end
 
 ---Returns an iterator, similar to `io.lines`.
