@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository is no longer maintained. Please see [Obsi2](https://github.com/simadude/obsi2) for the latest version and ongoing development.
+
 # Obsi 2D Game Engine (CC:Tweaked)
 
 ![Obsi logo](obsi-logo.png)
